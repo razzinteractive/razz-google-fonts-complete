@@ -24,7 +24,8 @@
     "homepage": "https://github.com/jonathantneal/google-fonts-complete",
     "scripts": {
         "generateList": "node ./generate-api-response.js",
-        "generateFonts": "node ./google-fonts-generator.js"
+        "generateFonts": "node ./google-fonts-generator.js",
+        "generateLegacyFonts": "node ./generate-legacy-fonts.js"
     },
     "bugs": {
         "url": "https://github.com/jonathantneal/google-fonts-complete/issues"
@@ -33,10 +34,9 @@
         "type": "git",
         "url": "https://github.com/jonathantneal/google-fonts-complete.git"
     },
-    "devDependencies": {
+    "dependencies": {
+        "axios": "^1.5.1",
+        "lodash": "^4.17.21",
         "postcss": "^8.3.9"
-    },
-    "peerDependencies": {
-        "postcss": "^8.0.0"
     }
 }

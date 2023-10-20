@@ -48,3 +48,21 @@ node ./google-fonts-generator.js
 ```
 
 [Google Fonts API]: https://developers.google.com/fonts/
+
+## Razz-specific
+
+After completing the generator steps above, an array of legacy fonts can then be generated and 
+manually added to the google-fonts.json file.
+
+For this step, use the legacy generator to create `google-fonts-legacy.json`.
+
+```sh
+npm run generateLegacyFonts
+```
+or
+
+```sh
+node ./generate-legacy-fonts.js
+```
+
+Add any legacy fonts found in google-fonts-legacy.json to the end of the google-fonts.json file.

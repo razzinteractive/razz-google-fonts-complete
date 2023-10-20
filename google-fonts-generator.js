@@ -7,6 +7,7 @@ const postcss = require('postcss');
 
 const fonts = require('./api-response.json');
 const userAgents = require('./user-agents.json');
+const axios = require('axios').default;
 
 const getSortedObject = object => {
     let sortedObject = {};
@@ -30,14 +31,16 @@ const fetch = options => {
     return new Promise((resolve, reject) => {
         https.get(options, response => {
             let result = '';
-
-            response.on('data', data => {
-                result += data;
-            });
-
-            response.on('end', end => {
-                resolve(result);
-            });
+            axios.get('https://' + options.host + options.path)
+                .then(function (response) {
+                    result = response.data;
+                })
+                .catch(function (error) {
+                    console.log(error);
+                })
+                .finally(function () {
+                    resolve(result);
+                });
         });
     });
 };
@@ -46,69 +49,75 @@ const fetch = options => {
 const convertFont = async({ convertedFont, family, format }, fetchOptions) => {
     let { variants, unicodeRange } = convertedFont;
 
-    const css = await fetch(fetchOptions);
+    try {
+        const css = await fetch(fetchOptions);
 
-    if (css) {
-        let subset = null;
-        const root = postcss.parse(css);
-        root.each(rule => {
-            if (rule.type === 'comment') {
-                subset = rule.text;
-            }
+        if (css) {
+            let subset = null;
+            const root = postcss.parse(css);
+            root.each(rule => {
+                if (rule.type === 'comment') {
+                    subset = rule.text;
+                }
 
-            if (rule.type === 'atrule' && rule.name === 'font-face') {
-                let fontStyle = 'normal';
-                let fontWeight = '400';
+                if (rule.type === 'atrule' && rule.name === 'font-face') {
+                    let fontStyle = 'normal';
+                    let fontWeight = '400';
 
-                rule.walkDecls('font-weight', decl => {
-                    fontWeight = decl.value;
-                });
-
-                rule.walkDecls('font-style', decl => {
-                    fontStyle = decl.value;
-                });
-                variants[fontStyle] = variants[fontStyle] || {};
-                variants[fontStyle][fontWeight] = variants[fontStyle][fontWeight] || {
-                    local: [],
-                    url: {}
-                };
-
-                rule.walkDecls('src', decl => {
-                    postcss.list.comma(decl.value).forEach(value => {
-                        value.replace(
-                            /(local|url)\((.+?)\)/g,
-                            (match, type, path) => {
-                                if (type === 'local') {
-                                    if (
-                                        variants[fontStyle][fontWeight].local.indexOf(path) === -1
-                                    ) {
-                                        variants[fontStyle][fontWeight].local.push(path);
-                                    }
-                                } else if (type === 'url') {
-                                    variants[fontStyle][fontWeight].url[format] = path;
-                                }
-                            }
-                        );
+                    rule.walkDecls('font-weight', decl => {
+                        fontWeight = decl.value;
                     });
-                });
 
-                rule.walkDecls('unicode-range', decl => {
+                    rule.walkDecls('font-style', decl => {
+                        fontStyle = decl.value;
+                    });
+                    variants[fontStyle] = variants[fontStyle] || {};
+                    variants[fontStyle][fontWeight] = variants[fontStyle][fontWeight] || {
+                        local: [],
+                        url: {}
+                    };
+
+                    rule.walkDecls('src', decl => {
+                        postcss.list.comma(decl.value).forEach(value => {
+                            value.replace(
+                                /(local|url)\((.+?)\)/g,
+                                (match, type, path) => {
+                                    if (type === 'local') {
+                                        if (
+                                            variants[fontStyle][fontWeight].local.indexOf(path) === -1
+                                        ) {
+                                            variants[fontStyle][fontWeight].local.push(path);
+                                        }
+                                    } else if (type === 'url') {
+                                        variants[fontStyle][fontWeight].url[format] = path;
+                                    }
+                                }
+                            );
+                        });
+                    });
+
+                    rule.walkDecls('unicode-range', decl => {
                         unicodeRange = {
                             ...unicodeRange,
                             [subset]: decl.value
                         }
-                });
+                    });
 
-                console.log('Captured', family, fontStyle, fontWeight, 'as', format,'...');
-            }
-        });
-        return {
-            ...convertedFont,
-            variants,
-            unicodeRange
-        };
-    } else {
-        console.log('Rejected', family, fontStyle, fontWeight, 'as', format,'...');
+                    console.log('Captured', family, fontStyle, fontWeight, 'as', format,'...');
+                }
+            });
+            return {
+                ...convertedFont,
+                variants,
+                unicodeRange
+            };
+        } else {
+            console.log('Rejected', family, 'as', format,'...');
+            return null;
+        }
+    }
+    catch (err) {
+        console.log('Error', family, err, format,'...');
         return null;
     }
 };
@@ -151,7 +160,7 @@ const convertFontsOptions = async (fonts, pathCb) => {
             }
         }
         results[family] = convertedFont;
-    };
+    }
 
     return results;
 };
