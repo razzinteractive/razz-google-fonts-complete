@@ -1,3 +1,8 @@
+## 2.2.3 (2023-10-20)
+
+- Updated: Google Fonts base to the latest version
+- Added: legacy font support script
+
 ## 2.2.2 (2021-10-30)
 
 - Updated: Google Fonts base to the latest version
